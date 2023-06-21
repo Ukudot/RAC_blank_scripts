@@ -7,10 +7,38 @@
 #include <ledUtility.h>
 #include "esp_log.h"
 #include "mac.h"
+#include <stdarg.h>
 static const char *TAG = "MAIN";
 
 #define weapPot 7
+//---------------------------------------Our functions
+void	ft_printf(const char *str, ...)
+{
+	va_list	args;
+	int		i;
 
+	va_start(args, str);
+	i = 0;
+	while (str[i])
+	{
+		if (str[i] == 37 && ++i)
+		{
+			if (str[i] == 'c')
+				Serial.print(va_arg(args, int));
+			else if (str[i] == 's')
+				Serial.print(va_arg(args, char *));
+			else if (str[i] == 'd' || str[i] == 'i')
+				Serial.print(va_arg(args, int));
+			else
+				Serial.print(str[i]);
+		}
+		else
+			Serial.print(str[i]);
+		i++;
+	}
+	va_end(args);
+}
+//---------------------------------------
 //------------ turn on generic serial printing
 //#define DEBUG_PRINTS
 
@@ -108,6 +136,7 @@ void setup()
   delay(500);
 
   WiFi.mode(WIFI_STA);
+  esp_wifi_set_channel(5, WIFI_SECOND_CHAN_NONE);
   if (esp_wifi_set_mac(WIFI_IF_STA, &robotAddress[0]) != ESP_OK)
   {
     Serial.println("Error changing mac");
@@ -124,6 +153,8 @@ void setup()
   Led.ledOn();
 }
 
+// motor1 = right
+// motor2 = left inverted
 void loop()
 {
 
@@ -142,8 +173,9 @@ void loop()
   else
   {
   // vvvv ----- YOUR AWESOME CODE HERE ----- vvvv //
-
-
+    motor1.setSpeed(recData.speedmotorLeft);
+    motor2.setSpeed(-recData.speedmotorRight);
+  ft_printf("m1: %i\tm2: %i\n", recData.speedmotorLeft, recData.speedmotorRight);
 
   // -------------------------------------------- //
   }

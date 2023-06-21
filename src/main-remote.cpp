@@ -1,17 +1,20 @@
 #ifdef REMOTE
-#include <math.h>
-#include <esp_now.h>
-#include "esp_wifi.h"
-#include <WiFi.h>
-#include <batteryMonitor.h>
-#include <ledUtility.h>
-#include "esp_log.h"
-#include "mac.h"
+# include <math.h>
+# include <iostream>
+# include <esp_now.h>
+# include "esp_wifi.h"
+# include <WiFi.h>
+# include <batteryMonitor.h>
+# include <ledUtility.h>
+# include "esp_log.h"
+# include "mac.h"
+# include <stdarg.h>
 
 static const char *TAG = "MAIN";
 //------------ turn on generic serial printing
 
-//#define DEBUG_PRINTS
+# define RANGE 400
+# define DEBUG_PRINTS
 //data that will be sent to the receiver
 
 typedef struct {
@@ -27,6 +30,34 @@ packet_t;
 packet_t sentData;
 packet_t recData;
 
+//---------------------------------------Our functions
+void	ft_printf(const char *str, ...)
+{
+	va_list	args;
+	int		i;
+
+	va_start(args, str);
+	i = 0;
+	while (str[i])
+	{
+		if (str[i] == 37 && ++i)
+		{
+			if (str[i] == 'c')
+				Serial.print(va_arg(args, int));
+			else if (str[i] == 's')
+				Serial.print(va_arg(args, char *));
+			else if (str[i] == 'd' || str[i] == 'i')
+				Serial.print(va_arg(args, int));
+			else
+				Serial.print(str[i]);
+		}
+		else
+			Serial.print(str[i]);
+		i++;
+	}
+	va_end(args);
+}
+//---------------------------------------
 
 //---------------------------------------ESP_NOW Variables
 
@@ -98,6 +129,7 @@ void setup() {
 
   //---------------------------------------ESP NOW setup
   WiFi.mode(WIFI_STA);
+  esp_wifi_set_channel(5, WIFI_SECOND_CHAN_NONE);
   if (esp_now_init() != ESP_OK) {
     Serial.println("Error initializing ESP-NOW");
     return;
@@ -138,9 +170,17 @@ void loop() {
   bool topValue = !digitalRead(topBtn);
   
   // vvvv ----- YOUR AWESOME CODE HERE ----- vvvv //
-
-
-
+  // ft_printf("steer: %i\taccel: %i\tlever: %i\trbtn: %i\t\tlbtn: %i\t\ttbtn: %i\n",
+  //	  strValue, accValue, leverValue, rightValue, leftValue, topValue);
+  if (accValue > 400 && accValue < 600)
+    accValue = 512;
+  if (strValue > 400 && strValue < 600)
+    strValue = 512;
+  strValue = map(strValue, 0, 1023, -RANGE, RANGE);
+  accValue = map(accValue, 0, 1023, -RANGE, RANGE);
+  sentData.speedmotorLeft = constrain(- strValue - accValue, -RANGE, RANGE);
+  sentData.speedmotorRight = constrain(strValue - accValue, -RANGE, RANGE);
+  ft_printf("m1: %i\tm2: %i\n", sentData.speedmotorLeft, sentData.speedmotorRight);
   // -------------------------------------------- //
   esp_err_t result = -1;
   result = esp_now_send(robotAddress, (uint8_t *) &sentData, sizeof(sentData));
