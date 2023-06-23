@@ -92,7 +92,7 @@ int recArg1 = 0;
 int recArg2 = 0;
 int recArg3 = 0;
 
-int btntop = 1;
+int btntop = 4;
 
 // Callback when data is received
 void OnDataRecv(const uint8_t *mac, const uint8_t *incomingData, int len)
@@ -183,21 +183,30 @@ void loop()
   else
   {
   // vvvv ----- YOUR AWESOME CODE HERE ----- vvvv //
-  std::cout << "pot: " << potlevel << std::endl;
-    if (recData.packetArg1)
-      btntop = 2;
-    if (btntop >= 2)
-    {
-      if (btntop == 2 && potlevel > 750 && btntop++)
-        motor3.setSpeed(RANGE);
-      else if (btntop == 2 && potlevel < 1023 && btntop++)
-        motor3.setSpeed(-RANGE);
-      else if (potlevel <= 750 || potlevel == 1023)
-      {
-        motor3.setSpeed(0);
-        btntop = 1;
-      }
-    }
+	std::cout << "pot: " << potlevel << std::endl;
+    switch (btntop)
+	{
+		case 1:
+			motor3.setSpeed(RANGE);
+			if (potlevel <= 750)
+				btntop = 2;
+			break ;
+		case 2:
+			motor3.setSpeed(0);
+			if (recData.packetArg1)
+				btntop = 3;
+			break ;
+		case 3:
+			motor3.setSpeed(-RANGE);
+			if (potlevel >= 1015)
+				btntop = 4;
+			break ;
+		case 4:
+			motor3.setSpeed(0);
+			if (recData.packetArg1)
+				btntop = 1;
+			break ;
+	}
     motor1.setSpeed(recData.speedmotorLeft);
     motor2.setSpeed(-recData.speedmotorRight);
     ft_printf("m1: %i\tm2: %i\n", recData.speedmotorLeft, recData.speedmotorRight);
