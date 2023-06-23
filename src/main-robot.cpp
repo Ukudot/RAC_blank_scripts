@@ -9,6 +9,7 @@
 #include "mac.h"
 #include <stdarg.h>
 #include <iostream>
+#include <chrono>
 static const char *TAG = "MAIN";
 
 #define RANGE 512
@@ -66,6 +67,8 @@ MotorControl motor1 = MotorControl(MOTOR_B_IN1, MOTOR_B_IN2, 0, RANGE);
 MotorControl motor2 = MotorControl(MOTOR_A_IN1, MOTOR_A_IN2, 0, RANGE);
 //WPN
 MotorControl motor3 = MotorControl(MOTOR_C_IN1, MOTOR_C_IN2, 0, RANGE);
+//TAIL
+MotorControl motor4 = MotorControl(MOTOR_D_IN1, MOTOR_D_IN2, 0, RANGE);
 
 BatteryMonitor Battery = BatteryMonitor();
 
@@ -77,6 +80,7 @@ typedef struct {
   int16_t packetArg1;
   int16_t packetArg2;
   int16_t packetArg3;
+  int16_t packetArg4;
 }
 packet_t;
 packet_t recData;
@@ -91,6 +95,7 @@ int recRpwm = 0;
 int recArg1 = 0;
 int recArg2 = 0;
 int recArg3 = 0;
+int recArg4 = 0;
 
 int btntop = 4;
 
@@ -103,6 +108,7 @@ void OnDataRecv(const uint8_t *mac, const uint8_t *incomingData, int len)
   recArg1 = recData.packetArg1;
   recArg2 = recData.packetArg2;
   recArg3 = recData.packetArg3;
+  recArg4 = recData.packetArg4;
   lastPacketMillis = millis();
   failsafe = false;
 }
@@ -140,6 +146,7 @@ void setup()
   motor1.setSpeed(0);
   motor2.setSpeed(0);
   motor3.setSpeed(0);
+  motor4.setSpeed(0);
   delay(500);
 
   WiFi.mode(WIFI_STA);
@@ -179,34 +186,42 @@ void loop()
     motor1.setSpeed(0);
     motor2.setSpeed(0);
     motor3.setSpeed(0);
+    motor4.setSpeed(0);
   }
   else
   {
   // vvvv ----- YOUR AWESOME CODE HERE ----- vvvv //
-	std::cout << "pot: " << potlevel << std::endl;
+    if (recData.packetArg2)
+        motor4.setSpeed(RANGE);
+    else if (recData.packetArg3)
+        motor4.setSpeed(-RANGE);
+    else
+        motor4.setSpeed(0);
     switch (btntop)
 	{
-		case 1:
+		case 1: // sale
 			motor3.setSpeed(RANGE);
 			if (potlevel <= 750)
 				btntop = 2;
 			break ;
-		case 2:
+		case 2: // fermo in alto
 			motor3.setSpeed(0);
 			if (recData.packetArg1)
 				btntop = 3;
 			break ;
-		case 3:
+		case 3: // scende
 			motor3.setSpeed(-RANGE);
 			if (potlevel >= 1015)
 				btntop = 4;
 			break ;
-		case 4:
+		case 4: // fermo in basso
 			motor3.setSpeed(0);
 			if (recData.packetArg1)
 				btntop = 1;
 			break ;
 	}
+    if (recData.packetArg4)
+        motor3.setSpeed(recData.packetArg4 * RANGE / 10);
     motor1.setSpeed(recData.speedmotorLeft);
     motor2.setSpeed(-recData.speedmotorRight);
     ft_printf("m1: %i\tm2: %i\n", recData.speedmotorLeft, recData.speedmotorRight);

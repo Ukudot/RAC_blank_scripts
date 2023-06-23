@@ -23,6 +23,7 @@ typedef struct {
   int16_t packetArg1;
   int16_t packetArg2;
   int16_t packetArg3;
+  int16_t packetArg4;
 }
 packet_t;
 
@@ -174,13 +175,19 @@ void loop() {
   //	  strValue, accValue, leverValue, rightValue, leftValue, topValue);
   if (accValue > 400 && accValue < 600)
     accValue = 512;
-  if (strValue > 400 && strValue < 600)
+  if (strValue > 500 && strValue < 535)
     strValue = 512;
+  if (leverValue > 510 && leverValue < 540)
+   leverValue = 500;
   strValue = map(strValue, 0, 1023, -RANGE, RANGE);
   accValue = map(accValue, 0, 1023, -RANGE, RANGE);
   sentData.speedmotorLeft = constrain(- strValue - accValue, -RANGE, RANGE);
   sentData.speedmotorRight = constrain(strValue - accValue, -RANGE, RANGE);
   sentData.packetArg1 = topValue;
+  sentData.packetArg2 = leftValue;
+  sentData.packetArg3 = rightValue;
+  sentData.packetArg4 = constrain(map(leverValue, 330, 670, 10, -10), -10, 10);
+  //Serial.println(leverValue);
   // -------------------------------------------- //
   esp_err_t result = -1;
   result = esp_now_send(robotAddress, (uint8_t *) &sentData, sizeof(sentData));
