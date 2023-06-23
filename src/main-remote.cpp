@@ -13,7 +13,7 @@
 static const char *TAG = "MAIN";
 //------------ turn on generic serial printing
 
-# define RANGE 400
+# define RANGE 512
 # define DEBUG_PRINTS
 //data that will be sent to the receiver
 
@@ -180,7 +180,7 @@ void loop() {
   accValue = map(accValue, 0, 1023, -RANGE, RANGE);
   sentData.speedmotorLeft = constrain(- strValue - accValue, -RANGE, RANGE);
   sentData.speedmotorRight = constrain(strValue - accValue, -RANGE, RANGE);
-  ft_printf("m1: %i\tm2: %i\n", sentData.speedmotorLeft, sentData.speedmotorRight);
+  sentData.packetArg1 = topValue;
   // -------------------------------------------- //
   esp_err_t result = -1;
   result = esp_now_send(robotAddress, (uint8_t *) &sentData, sizeof(sentData));

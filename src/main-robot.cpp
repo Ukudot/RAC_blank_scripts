@@ -8,8 +8,11 @@
 #include "esp_log.h"
 #include "mac.h"
 #include <stdarg.h>
+#include <iostream>
 static const char *TAG = "MAIN";
 
+#define RANGE 512
+#define DEBUG_PRITNS
 #define weapPot 7
 //---------------------------------------Our functions
 void	ft_printf(const char *str, ...)
@@ -49,17 +52,20 @@ void	ft_printf(const char *str, ...)
 #define MOTOR_B_IN1 16
 #define MOTOR_B_IN2 17
 
-#define MOTOR_C_IN1 4
-#define MOTOR_C_IN2 5
+#define MOTOR_C_IN1 15
+#define MOTOR_C_IN2 6
+
+#define MOTOR_D_IN1 4
+#define MOTOR_D_IN2 5
 
 
 
 //RIGHT
-MotorControl motor1 = MotorControl(MOTOR_B_IN1, MOTOR_B_IN2); 
+MotorControl motor1 = MotorControl(MOTOR_B_IN1, MOTOR_B_IN2, 0, RANGE); 
 //LEFT
-MotorControl motor2 = MotorControl(MOTOR_A_IN1, MOTOR_A_IN2);
+MotorControl motor2 = MotorControl(MOTOR_A_IN1, MOTOR_A_IN2, 0, RANGE);
 //WPN
-MotorControl motor3 = MotorControl(MOTOR_C_IN1, MOTOR_C_IN2);
+MotorControl motor3 = MotorControl(MOTOR_C_IN1, MOTOR_C_IN2, 0, RANGE);
 
 BatteryMonitor Battery = BatteryMonitor();
 
@@ -86,6 +92,7 @@ int recArg1 = 0;
 int recArg2 = 0;
 int recArg3 = 0;
 
+int btntop = 1;
 
 // Callback when data is received
 void OnDataRecv(const uint8_t *mac, const uint8_t *incomingData, int len)
@@ -159,6 +166,8 @@ void loop()
 {
 
   unsigned long current_time = millis();
+  int potlevel = analogRead(weapPot);
+
   if (current_time - lastPacketMillis > failsafeMaxMillis)
   {
     failsafe = true;
@@ -166,6 +175,7 @@ void loop()
   handle_blink();
   if (failsafe)
   {
+    std::cout << "prova" << std::endl;
     motor1.setSpeed(0);
     motor2.setSpeed(0);
     motor3.setSpeed(0);
@@ -173,10 +183,24 @@ void loop()
   else
   {
   // vvvv ----- YOUR AWESOME CODE HERE ----- vvvv //
+  std::cout << "pot: " << potlevel << std::endl;
+    if (recData.packetArg1)
+      btntop = 2;
+    if (btntop >= 2)
+    {
+      if (btntop == 2 && potlevel > 750 && btntop++)
+        motor3.setSpeed(RANGE);
+      else if (btntop == 2 && potlevel < 1023 && btntop++)
+        motor3.setSpeed(-RANGE);
+      else if (potlevel <= 750 || potlevel == 1023)
+      {
+        motor3.setSpeed(0);
+        btntop = 1;
+      }
+    }
     motor1.setSpeed(recData.speedmotorLeft);
     motor2.setSpeed(-recData.speedmotorRight);
-  ft_printf("m1: %i\tm2: %i\n", recData.speedmotorLeft, recData.speedmotorRight);
-
+    ft_printf("m1: %i\tm2: %i\n", recData.speedmotorLeft, recData.speedmotorRight);
   // -------------------------------------------- //
   }
   delay(2);
