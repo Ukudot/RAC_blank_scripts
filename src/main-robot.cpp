@@ -60,7 +60,6 @@ void	ft_printf(const char *str, ...)
 #define MOTOR_D_IN2 5
 
 
-
 //RIGHT
 MotorControl motor1 = MotorControl(MOTOR_B_IN1, MOTOR_B_IN2, 0, RANGE); 
 //LEFT
@@ -89,6 +88,7 @@ packet_t recData;
 bool failsafe = false;
 unsigned long failsafeMaxMillis = 400;
 unsigned long lastPacketMillis = 0;
+unsigned long	current_time = 0;
 
 int recLpwm = 0;
 int recRpwm = 0;
@@ -172,7 +172,8 @@ void setup()
 // motor2 = left inverted
 void loop()
 {
-	unsigned long current_time = millis();
+	unsigned long	old_time = current_time;
+	current_time = millis();
 	int potlevel = analogRead(weapPot);
 
 	if (current_time - lastPacketMillis > failsafeMaxMillis)
@@ -180,7 +181,7 @@ void loop()
 	handle_blink();
 	if (failsafe)
 	{
-		std::cout << "failsafe" << std::endl;
+		std::cout << potlevel << std::endl;
 		motor1.setSpeed(0);
 		motor2.setSpeed(0);
 		motor3.setSpeed(0);
@@ -194,25 +195,28 @@ void loop()
 	else if (recData.packetArg3 && !recData.packetArg1 && !recData.packetArg2)
 		motor4.setSpeed(-(RANGE * 9 / 10));
 	else
+	{
+		motor4.setSpeed(0);
 		motor4.unlockMotor(); // gpanico
+	}
 
 	switch (btntop)
 	{
 		case 1: // sale
 			motor3.setSpeed(RANGE);
-    		btntop = (potlevel <= 750) ? 2 : btntop;
+    		btntop = (potlevel <= 50) ? 3 : btntop;
 			break ;
-		case 2: // fermo in alto
-			motor3.setSpeed(0);
-			btntop = (recData.packetArg1 && !recData.packetArg2 && !recData.packetArg3) ? 3 : btntop;
-			break ;
+		// case 2: // fermo in alto
+		// 	motor3.setSpeed(0);
+		// 	btntop = (recData.packetArg1 && !recData.packetArg2 && !recData.packetArg3) ? 3 : btntop;
+		// 	break ;
 		case 3: // scende
-			motor3.setSpeed(-RANGE);
-			if (potlevel >= 1020)
-			{
-				usleep(22000);
-				btntop = 4;
-			}
+			if (potlevel < 200)
+				motor3.setSpeed(-RANGE);
+			else
+				motor3.setSpeed((-1) * (330 - potlevel) / (float) (current_time - old_time));
+			//std::cout << (-1) * (330 - potlevel) / (float) (current_time - old_time) << std::endl;
+			btntop = (potlevel >= 310) ? 4 : btntop;
 			break ;
 		case 4: // fermo in basso
 			motor3.setSpeed(0);
@@ -221,12 +225,12 @@ void loop()
 	}
 	if (recData.packetArg1 && recData.packetArg2 && recData.packetArg3)
 	{
-		if (potlevel > 770)
+		if (potlevel > 50)
 			motor3.setSpeed(RANGE);
 		else
 			motor3.setSpeed(-RANGE);
 	}
-	if (recData.packetArg4)
+	if ((recData.packetArg4 > 0 && potlevel > 30) || (recData.packetArg4 < 0 && potlevel < 325))
 		motor3.setSpeed(recData.packetArg4 * RANGE / 10);
 	motor1.setSpeed(recData.speedmotorLeft);
 	motor2.setSpeed(-recData.speedmotorRight);

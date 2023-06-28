@@ -203,7 +203,7 @@ void loop() {
   sentData.packetArg2 = leftValue;
   sentData.packetArg3 = rightValue;
   sentData.packetArg4 = constrain(map(leverValue, 330, 670, 10, -10), -10, 10);
-  //Serial.println(leverValue);
+  Serial.println(sentData.speedmotorLeft);
   // -------------------------------------------- //
   esp_err_t result = -1;
   result = esp_now_send(robotAddress, (uint8_t *) &sentData, sizeof(sentData));
