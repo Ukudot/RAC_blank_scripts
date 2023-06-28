@@ -31,6 +31,8 @@ packet_t;
 packet_t sentData;
 packet_t recData;
 
+BatteryMonitor Battery = BatteryMonitor();
+
 //---------------------------------------Our functions
 void	ft_printf(const char *str, ...)
 {
@@ -109,6 +111,16 @@ int leverValue = 0;
 
 unsigned long current_time = 0;
 
+int handle_blink(){
+  if(Battery.isLow()){
+    Led.setBlinks(1,1000);
+    return 1;
+  }
+  Led.setBlinks(0);
+  Led.ledOn();
+  return 0;
+}
+
 
 void setup() {
   //store_values(); // uncomment only to initialize mem
@@ -158,6 +170,10 @@ void setup() {
 
 
 void loop() {
+  // battery
+
+  handle_blink();
+
   //read pots values
   int strValue = analogRead(steerPot);
   delay(3);

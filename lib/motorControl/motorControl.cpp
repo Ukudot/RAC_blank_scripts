@@ -80,3 +80,8 @@ void MotorControl::setSpeed(int speed) {
     mcpwm_set_duty(_pwm_unit, _pwm_timer, MCPWM_GEN_B, 100);
   }
 }
+
+void MotorControl::unlockMotor(void) {
+  mcpwm_set_duty(_pwm_unit, _pwm_timer, MCPWM_GEN_A, 0);
+  mcpwm_set_duty(_pwm_unit, _pwm_timer, MCPWM_GEN_B, 0);
+}

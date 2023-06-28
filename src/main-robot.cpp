@@ -190,17 +190,17 @@ void loop()
 	{
   // vvvv ----- YOUR AWESOME CODE HERE ----- vvvv //
 	if (recData.packetArg2 && !recData.packetArg1 && !recData.packetArg3)
-		motor4.setSpeed(RANGE);
+		motor4.setSpeed(RANGE * 9 / 10);
 	else if (recData.packetArg3 && !recData.packetArg1 && !recData.packetArg2)
-		motor4.setSpeed(-RANGE);
+		motor4.setSpeed(-(RANGE * 9 / 10));
 	else
-		motor4.setSpeed(0);
+		motor4.unlockMotor(); // gpanico
 
 	switch (btntop)
 	{
 		case 1: // sale
 			motor3.setSpeed(RANGE);
-    		btntop = (potlevel <= 700) ? 2 : btntop;
+    		btntop = (potlevel <= 750) ? 2 : btntop;
 			break ;
 		case 2: // fermo in alto
 			motor3.setSpeed(0);
@@ -218,6 +218,13 @@ void loop()
 			motor3.setSpeed(0);
 			btntop = (recData.packetArg1 && !recData.packetArg2 && !recData.packetArg3) ? 1 : btntop;
 			break ;
+	}
+	if (recData.packetArg1 && recData.packetArg2 && recData.packetArg3)
+	{
+		if (potlevel > 770)
+			motor3.setSpeed(RANGE);
+		else
+			motor3.setSpeed(-RANGE);
 	}
 	if (recData.packetArg4)
 		motor3.setSpeed(recData.packetArg4 * RANGE / 10);

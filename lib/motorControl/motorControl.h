@@ -8,6 +8,7 @@ class MotorControl
 public:
   MotorControl(uint16_t pin_A, uint16_t pin_B,int start_pwm = 0, int max_resolution = 512);
   void setSpeed(int speed);
+  void unlockMotor(void);
   ~MotorControl();
 private:
   static uint16_t _free_pwm_unit;
