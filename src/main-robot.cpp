@@ -172,61 +172,60 @@ void setup()
 // motor2 = left inverted
 void loop()
 {
+	unsigned long current_time = millis();
+	int potlevel = analogRead(weapPot);
 
-  unsigned long current_time = millis();
-  int potlevel = analogRead(weapPot);
-
-  if (current_time - lastPacketMillis > failsafeMaxMillis)
-    failsafe = true;
-  handle_blink();
-  if (failsafe)
-  {
-    std::cout << "failsafe" << std::endl;
-    motor1.setSpeed(0);
-    motor2.setSpeed(0);
-    motor3.setSpeed(0);
-    motor4.setSpeed(0);
-  }
-  else
-  {
+	if (current_time - lastPacketMillis > failsafeMaxMillis)
+		failsafe = true;
+	handle_blink();
+	if (failsafe)
+	{
+		std::cout << "failsafe" << std::endl;
+		motor1.setSpeed(0);
+		motor2.setSpeed(0);
+		motor3.setSpeed(0);
+		motor4.setSpeed(0);
+	}
+	else
+	{
   // vvvv ----- YOUR AWESOME CODE HERE ----- vvvv //
-  if (recData.packetArg2)
-    motor4.setSpeed(RANGE);
-  else if (recData.packetArg3)
-    motor4.setSpeed(-RANGE);
-  else
-    motor4.setSpeed(0);
+	if (recData.packetArg2 && !recData.packetArg1 && !recData.packetArg3)
+		motor4.setSpeed(RANGE);
+	else if (recData.packetArg3 && !recData.packetArg1 && !recData.packetArg2)
+		motor4.setSpeed(-RANGE);
+	else
+		motor4.setSpeed(0);
 
-  switch (btntop)
+	switch (btntop)
 	{
 		case 1: // sale
 			motor3.setSpeed(RANGE);
-      btntop = (potlevel <= 700) ? 2 : btntop;
+    		btntop = (potlevel <= 700) ? 2 : btntop;
 			break ;
 		case 2: // fermo in alto
 			motor3.setSpeed(0);
-			btntop = (recData.packetArg1) ? 3 : btntop;
+			btntop = (recData.packetArg1 && !recData.packetArg2 && !recData.packetArg3) ? 3 : btntop;
 			break ;
 		case 3: // scende
 			motor3.setSpeed(-RANGE);
 			if (potlevel >= 1020)
-      {
-        usleep(22500);
+			{
+				usleep(22000);
 				btntop = 4;
-      }
+			}
 			break ;
 		case 4: // fermo in basso
 			motor3.setSpeed(0);
-			btntop = (recData.packetArg1) ? 1 : btntop;
+			btntop = (recData.packetArg1 && !recData.packetArg2 && !recData.packetArg3) ? 1 : btntop;
 			break ;
 	}
-  if (recData.packetArg4)
-    motor3.setSpeed(recData.packetArg4 * RANGE / 10);
-  motor1.setSpeed(recData.speedmotorLeft);
-  motor2.setSpeed(-recData.speedmotorRight);
+	if (recData.packetArg4)
+		motor3.setSpeed(recData.packetArg4 * RANGE / 10);
+	motor1.setSpeed(recData.speedmotorLeft);
+	motor2.setSpeed(-recData.speedmotorRight);
     // ft_printf("m1: %i\tm2: %i\n", recData.speedmotorLeft, recData.speedmotorRight);
-  // -------------------------------------------- //
-  }
-  delay(2);
+	// -------------------------------------------- //
+	}
+	delay(2);
 }
 #endif
