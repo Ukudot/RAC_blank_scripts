@@ -15,6 +15,7 @@ static const char *TAG = "MAIN";
 
 # define RANGE 512
 # define DEBUG_PRINTS
+# define CONTROLLER_LUCA
 //data that will be sent to the receiver
 
 typedef struct {
@@ -146,7 +147,7 @@ void setup() {
 
   //---------------------------------------ESP NOW setup
   WiFi.mode(WIFI_STA);
-  esp_wifi_set_channel(5, WIFI_SECOND_CHAN_NONE);
+  esp_wifi_set_channel(2, WIFI_SECOND_CHAN_NONE);
   if (esp_now_init() != ESP_OK) {
     Serial.println("Error initializing ESP-NOW");
     return;
@@ -191,8 +192,6 @@ void loop() {
   bool topValue = !digitalRead(topBtn);
   
   // vvvv ----- YOUR AWESOME CODE HERE ----- vvvv //
-  // ft_printf("steer: %i\taccel: %i\tlever: %i\trbtn: %i\t\tlbtn: %i\t\ttbtn: %i\n",
-  //	  strValue, accValue, leverValue, rightValue, leftValue, topValue);
   if (accValue > 400 && accValue < 600)
     accValue = 512;
   if (strValue > 500 && strValue < 535)
@@ -204,31 +203,32 @@ void loop() {
   weight = strValue * strValue + accValue * accValue;
   weight /= (float) (RANGE * RANGE);
   weight = weight > 1 ? 1 : weight;
-  // old controller
-  sentData.speedmotorLeft = constrain(- strValue - accValue, -RANGE, RANGE);
-  sentData.speedmotorRight = constrain(strValue - accValue, -RANGE, RANGE);
-  // new controller
+#ifndef CONTROLLER_LUCA
+ 	sentData.speedmotorLeft = constrain(- strValue - accValue, -RANGE, RANGE);
+	sentData.speedmotorRight = constrain(strValue - accValue, -RANGE, RANGE);
+#endif
+#ifdef CONTROLLER_LUCA
   if (strValue == 0)
   {
-	  sentData.speedmotorLeft = accValue;
-	  sentData.speedmotorRight = accValue;
+	  sentData.speedmotorLeft = -accValue;
+	  sentData.speedmotorRight = -accValue;
   }
   else if (strValue > 0)
   {
-	m = (float) strValue / accValue;
+	m = (float) - accValue / strValue;
 	if (m < 0.57735 && m > -0.57735)
 	{
-		sentData.speedmotorLeft = RANGE * weight;
-		sentData.speddmotorRight = - RANGE * weight;
+		sentData.speedmotorLeft = - RANGE * weight;
+		sentData.speedmotorRight = RANGE * weight;
 	}
 	else if (m < 1.7321 && m > 0.57735)
 	{
-		sentData.speedmotorLeft = RANGE / 2 * weight;
+		sentData.speedmotorLeft = RANGE / 4 * weight;
 		sentData.speedmotorRight = RANGE * weight;
 	}
 	else if (m < -0.57735 && m > -1.7321)
 	{
-		sentData.speedmotorLeft = - RANGE / 2 * weight;
+		sentData.speedmotorLeft = - RANGE / 4 * weight;
 		sentData.speedmotorRight = - RANGE * weight;
 	}
 	else if (m > 1.7321)
@@ -244,39 +244,38 @@ void loop() {
   }
   else
   {
-	m = (float) strValue / accValue;
+	m = (float) - accValue / strValue;
 	if (m < 0.57735 && m > -0.57735)
 	{
-		sentData.speedmotorLeft = - RANGE * weight;
-		sentData.speddmotorRight = RANGE * weight;
+		sentData.speedmotorLeft = RANGE * weight;
+		sentData.speedmotorRight = - RANGE * weight;
 	}
 	else if (m < 1.7321 && m > 0.57735)
 	{
-		sentData.speedmotorLeft = RANGE * weight;
-		sentData.speedmotorRight = RANGE / 2 * weight;
+		sentData.speedmotorLeft = - RANGE * weight;
+		sentData.speedmotorRight = - RANGE / 4 * weight;
 	}
 	else if (m < -0.57735 && m > -1.7321)
 	{
-		sentData.speedmotorLeft = - RANGE * weight;
-		sentData.speedmotorRight = - RANGE / 2 * weight;
+		sentData.speedmotorLeft = RANGE * weight;
+		sentData.speedmotorRight = RANGE / 4 * weight;
 	}
 	else if (m > 1.7321)
-	{
-		sentData.speedmotorLeft = RANGE * weight;
-		sentData.speedmotorRight = RANGE * weight;
-	}
-	else
 	{
 		sentData.speedmotorLeft = - RANGE * weight;
 		sentData.speedmotorRight = - RANGE * weight;
 	}
+	else
+	{
+		sentData.speedmotorLeft = RANGE * weight;
+		sentData.speedmotorRight = RANGE * weight;
+	}
   }
-  // end controller
+#endif
   sentData.packetArg1 = topValue;
   sentData.packetArg2 = leftValue;
   sentData.packetArg3 = rightValue;
   sentData.packetArg4 = constrain(map(leverValue, 330, 670, 10, -10), -10, 10);
-  Serial.println(sentData.speedmotorLeft);
   // -------------------------------------------- //
   esp_err_t result = -1;
   result = esp_now_send(robotAddress, (uint8_t *) &sentData, sizeof(sentData));
@@ -285,6 +284,6 @@ void loop() {
   } else {
     //Serial.println("Error sending the data");
   }
-  delay(10);
+  delay(20);
 }
 #endif

@@ -15,6 +15,7 @@ static const char *TAG = "MAIN";
 #define RANGE 512
 #define DEBUG_PRITNS
 #define weapPot 7
+
 //---------------------------------------Our functions
 void	ft_printf(const char *str, ...)
 {
@@ -89,6 +90,7 @@ bool failsafe = false;
 unsigned long failsafeMaxMillis = 400;
 unsigned long lastPacketMillis = 0;
 unsigned long	current_time = 0;
+int				potlevel = 0;
 
 int recLpwm = 0;
 int recRpwm = 0;
@@ -151,7 +153,7 @@ void setup()
   delay(500);
 
   WiFi.mode(WIFI_STA);
-  esp_wifi_set_channel(5, WIFI_SECOND_CHAN_NONE);
+  esp_wifi_set_channel(2, WIFI_SECOND_CHAN_NONE);
   if (esp_wifi_set_mac(WIFI_IF_STA, &robotAddress[0]) != ESP_OK)
   {
     Serial.println("Error changing mac");
@@ -168,24 +170,23 @@ void setup()
   Led.ledOn();
 }
 
-// motor1 = right
-// motor2 = left inverted
 void loop()
 {
 	unsigned long	old_time = current_time;
+	int				old_potlevel = 330 - potlevel;
 	current_time = millis();
-	int potlevel = analogRead(weapPot);
+	potlevel = analogRead(weapPot);
 
 	if (current_time - lastPacketMillis > failsafeMaxMillis)
 		failsafe = true;
 	handle_blink();
 	if (failsafe)
 	{
-		std::cout << potlevel << std::endl;
 		motor1.setSpeed(0);
 		motor2.setSpeed(0);
 		motor3.setSpeed(0);
 		motor4.setSpeed(0);
+		btntop = 4;
 	}
 	else
 	{
@@ -206,16 +207,11 @@ void loop()
 			motor3.setSpeed(RANGE);
     		btntop = (potlevel <= 50) ? 3 : btntop;
 			break ;
-		// case 2: // fermo in alto
-		// 	motor3.setSpeed(0);
-		// 	btntop = (recData.packetArg1 && !recData.packetArg2 && !recData.packetArg3) ? 3 : btntop;
-		// 	break ;
 		case 3: // scende
 			if (potlevel < 200)
 				motor3.setSpeed(-RANGE);
 			else
-				motor3.setSpeed((-1) * (330 - potlevel) / (float) (current_time - old_time));
-			//std::cout << (-1) * (330 - potlevel) / (float) (current_time - old_time) << std::endl;
+				motor3.setSpeed((-5) * (330 - potlevel) / (float) (current_time - old_time));
 			btntop = (potlevel >= 310) ? 4 : btntop;
 			break ;
 		case 4: // fermo in basso
@@ -234,7 +230,9 @@ void loop()
 		motor3.setSpeed(recData.packetArg4 * RANGE / 10);
 	motor1.setSpeed(recData.speedmotorLeft);
 	motor2.setSpeed(-recData.speedmotorRight);
-    // ft_printf("m1: %i\tm2: %i\n", recData.speedmotorLeft, recData.speedmotorRight);
+	std::cout << (btntop);
+	std::cout << ("\t");
+	std::cout << (potlevel) << std::endl;
 	// -------------------------------------------- //
 	}
 	delay(2);
